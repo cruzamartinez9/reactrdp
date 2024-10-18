@@ -1,20 +1,39 @@
-// Callback.js
 import React, { useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
+import axios from 'axios';
 
 const Callback = () => {
-    useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code'); // Get the authorization code
-        // You would typically exchange this code for an access token here
-        console.log('Authorization code:', code);
-    }, []);
+  const history = useHistory();
 
-    return (
-        <div>
-            <h1>Callback Page</h1>
-            <p>You can close this window now.</p>
-        </div>
-    );
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      console.error('No token found!');
+      history.push('/login');  // Redirect to login if no token
+      return;
+    }
+
+    // Fetch vaults from 1Password
+    const fetchVaults = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/v1/vaults', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        console.log('Vaults:', response.data);
+        // You can store the vaults in state or context and redirect to the app
+        history.push('/app');
+      } catch (error) {
+        console.error('Error fetching vaults:', error);
+      }
+    };
+
+    fetchVaults();
+  }, [history]);
+
+  return <div>Loading...</div>;
 };
 
 export default Callback;
