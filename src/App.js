@@ -1,22 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Setup from './components/Setup';
 import Login from './components/Login';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+const App = () => {
+    const setupComplete = localStorage.getItem('setupComplete');
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
-  return (
-    <div className="App">
-      {!isAuthenticated ? (
-        <Login onLogin={handleLogin} />
-      ) : (
-        <h1>Welcome! You are logged in.</h1>
-      )}
-    </div>
-  );
-}
+    return (
+        <Router basename="/reactrdp">  {/* This was the key part */}
+            <Routes>
+                <Route path="/setup" element={<Setup />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={setupComplete ? <Navigate to="/login" /> : <Navigate to="/setup" />} />
+            </Routes>
+        </Router>
+    );
+};
 
 export default App;

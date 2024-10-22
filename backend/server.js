@@ -1,39 +1,35 @@
 const express = require('express');
-const { exec } = require('child_process');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-
+const cors = require('cors');  // Import cors
+const { execFile } = require('child_process');
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
 
-let sessionToken = null;  // Store the session token securely on the backend
+app.use(cors());  // Enable CORS for all routes
+app.use(express.json());
 
-// Route to trigger the 1Password CLI and log in the user
-app.post('/auth/login', (req, res) => {
-  exec('op signin --session', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error: ${error.message}`);
-      return res.status(500).json({ success: false, message: 'Authentication failed' });
-    }
+app.post('/api/run-python-script', (req, res) => {
+    const { email, secretKey, password } = req.body;
 
-    // Extract sessionToken from CLI output (stdout)
-    sessionToken = stdout.match(/OP_SESSION_.*=(.*)/)[1];
-    console.log('Session token received:', sessionToken);
+    const scriptPath = 'script.py';
 
-    res.json({ success: true, sessionToken });
-  });
-});
+    const process = execFile('python3', [scriptPath, email, secretKey, password], (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error executing Python script: ${error.message}`);
+            return res.status(500).json({ success: false, error: error.message });
+        }
+        if (stderr) {
+            console.error(`Python script stderr: ${stderr}`);
+            return res.status(500).json({ success: false, error: stderr });
+        }
 
-// Route to securely retrieve the session token
-app.get('/auth/session', (req, res) => {
-  if (!sessionToken) {
-    return res.status(401).json({ success: false, message: 'User not authenticated' });
-  }
+        console.log(`Python script stdout: ${stdout}`);
+        if (stdout.includes('failure condition')) { // Customize this based on your script's output
+            return res.json({ success: false, error: 'Invalid credentials' });
+        }
 
-  res.json({ success: true, sessionToken });
+        return res.json({ success: true });
+    });
 });
 
 app.listen(5000, () => {
-  console.log('Backend server running on http://localhost:5000');
+    console.log('Backend server running on http://localhost:5000');
 });
